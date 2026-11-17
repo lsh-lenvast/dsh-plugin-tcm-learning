@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="中医学习">
+  <rect width="64" height="64" rx="14" fill="#a8332a"/>
+  <rect x="18" y="13" width="23" height="38" rx="3" fill="#f6ecdc"/>
+  <rect x="22" y="18" width="15" height="3" rx="1.5" fill="#a8332a" opacity="0.72"/>
+  <rect x="22" y="24" width="15" height="1.5" rx="0.75" fill="#a8332a" opacity="0.3"/>
+  <rect x="23" y="38" width="11" height="9" rx="1.5" fill="#a8332a" opacity="0.85"/>
+  <path d="M41 15.5c3 0 5 1.6 5 4v30.5c0-2.2-2-3.6-5-3.6" fill="#e7d6bd" opacity="0.9"/>
+</svg>

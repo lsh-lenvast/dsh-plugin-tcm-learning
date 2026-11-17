@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>中医学习 · 预览</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #f6f2e8; }
+  body[data-ds-dark-theme] { background: #171410; }
+  #root { height: 100vh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="../node_modules/react/umd/react.development.js"></script>
+<script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
+<script src="./fixture.js"></script>
+
+<script>
+  // 1. 模块外壳 + 假 API：都必须在 client bundle 执行之前就位。
+  window.__TCM_DEF__ = null;
+  window.__ModuleLoader__ = { load(def) { window.__TCM_DEF__ = def; } };
+
+  (function () {
+    const fixture = window.__TCM_FIXTURE__ ?? { workspaces: { workspaces: [] } };
+    const json = (data) => ({ ok: true, data });
+    const realFetch = window.fetch.bind(window);
+    window.fetch = async function (input, init) {
+      const href = typeof input === 'string' ? input : String(input && input.url);
+      if (!href.includes('/tcm/api/')) return realFetch(input, init);
+      const url = new URL(href, location.href);
+      const route = url.pathname.split('/tcm/api/')[1].replace(/\/+$/, '');
+      const q = url.searchParams;
+      let payload = { ok: false, code: 'NOT_FOUND', message: route };
+      if (route === 'workspaces') payload = json(fixture.workspaces);
+      else if (route === 'bootstrap') payload = json(fixture.bootstrap);
+      else if (route === 'section') payload = json(fixture.sections[q.get('section')] ?? { section: { id: q.get('section'), title: q.get('section'), color: null }, books: [] });
+      else if (route === 'doc') payload = json(fixture.docs[q.get('path')] ?? { rel: q.get('path'), title: q.get('path'), meta: {}, content: '(预览没有这篇内容)', raw: '', words: 0, mtime: 0 });
+      else if (route === 'search') payload = json(fixture.search);
+      return new Response(JSON.stringify(payload), { status: payload.ok ? 200 : 404, headers: { 'content-type': 'application/json' } });
+    };
+  })();
+</script>
+
+<script src="../lib/client.js"></script>
+
+<script>
+  (function () {
+    const react = window.React;
+    const jsxRuntime = {
+      Fragment: react.Fragment,
+      jsx: (type, props, key) => react.createElement(type, key === undefined ? props : Object.assign({}, props, { key })),
+      jsxs: (type, props, key) => react.createElement(type, key === undefined ? props : Object.assign({}, props, { key })),
+    };
+    const req = (id) => {
+      if (id === 'react') return react;
+      if (id === 'react/jsx-runtime') return jsxRuntime;
+      if (id === 'react-dom') return window.ReactDOM;
+      if (id === 'react-dom/client') return window.ReactDOM;
+      throw new Error('preview: unsupported external ' + id);
+    };
+
+    let Panel = null;
+    const ctx = {
+      effect(fn) { const d = fn(); return typeof d === 'function' ? d : () => {}; },
+      slots: {
+        inject(_name, fn) { const d = fn(); return typeof d === 'function' ? d : () => {}; },
+        register(options, component) {
+          if (options.name === 'main') Panel = component;
+          return () => {};
+        },
+      },
+    };
+
+    const definition = window.__TCM_DEF__;
+    const exports = definition ? definition.factory(req) : {};
+    exports.apply(ctx);
+    const mount = document.getElementById('root');
+    ReactDOM.createRoot(mount).render(react.createElement(Panel));
+    window.__TCM_READY__ = true;
+
+    // 预览导航：?open=中药 进书架；再给 doc 参数则打开某篇正文；?mode=config 进配置页。
+    const params = new URLSearchParams(location.search);
+    const clickBy = (selector, text) => {
+      const node = [...document.querySelectorAll(selector)].find(el => (el.textContent ?? '').includes(text));
+      if (node) node.click();
+      return node !== undefined;
+    };
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    setTimeout(async () => {
+      if (params.get('mode') === 'config') {
+        clickBy('.tcm-tab', '配置');
+        await sleep(400);
+      }
+      const section = params.get('open');
+      if (section) {
+        clickBy('.tcm-section-card', section);
+        await sleep(500);
+        const doc = params.get('doc');
+        if (doc) {
+          clickBy('.tcm-spine', doc);
+          await sleep(700);
+        }
+        const hover = params.get('hover');
+        if (hover !== null) {
+          const spines = document.querySelectorAll('.tcm-spine');
+          const target = spines[Number(hover)];
+          if (target) {
+            target.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }));
+            await sleep(500);
+          }
+        }
+      }
+    }, 250);
+  })();
+</script>
+</body>
+</html>

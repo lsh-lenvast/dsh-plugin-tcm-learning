@@ -1,0 +1,4 @@
+# 中医学习插件（本地开发挂载用）
+- insert:
+    - id: tcm-learning
+      name: dsh-plugin-tcm-learning
